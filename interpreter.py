@@ -27,15 +27,17 @@ FLAGS = {
     'v' : 0b0,  #OVERFLOW FLAG
     }
 
-
 REGISTERS = { "$" + str(hex(i))[-1].upper() : 0b00000000 for i in range(0x10)}
 
 PC = 0x0    #Program Counter
 IR = ()     #Instrction Register (16-bits)
 
-#RAM
+#Memory
 MAR = [] #Master Address Register (0x0000-0xFFFF)
 MDR = [] #Master Data Register (0x0000-0xFFFF)
+
+neg = lambda i : 0 if i == 0b1111 else 0b1111       #Bitwise negation
+mux_2_1 = lambda a, b, sn: (a & neg(sn)) | (b & sn) #2 to 1 multiplexer
 
 
 def parse_instruction(ins) -> tuple:
@@ -73,7 +75,7 @@ def parse_instruction(ins) -> tuple:
             else:
                 instructions[i] = bin(int(instructions[i][1], 16))
                 
-        instructions[0] = bin(instructions[0])
+        instructions[0] = instructions[0]
         return tuple(instructions)
     
     except InvalidInstructionError:
@@ -82,7 +84,7 @@ def parse_instruction(ins) -> tuple:
         print("The instruction contains invalid arguments")
 
 def load_instruction(ins):
-    """Loads a given instruction into RAM"""
+    """Loads a given instruction into memory"""
     #Raises an exception if there aren't any available registers in RAM
     if(PC > 0xFFFF):
         raise MemoryOverflowException
@@ -93,6 +95,7 @@ def fetch_instruction():
     """Fetches the last instruction from memory"""
     global PC
     global IR
+    #Stores the data from the MAR and the MDR into the IR
     IR = MAR[PC] + MDR[PC]
     PC += 1
 
@@ -100,14 +103,8 @@ def mux(s, value = None):
     """16 to 1 multiplexer"""
     s = s[2:]
     s = [0b1111 * int(i) for i in s[::-1]]
-        
-    #Bitwise negation
-    neg = lambda i : 0 if i == 0b1111 else 0b1111
     
-    #2 to 1 multiplexer
-    mux_2_1 = lambda a, b, sn: (a & neg(sn)) | (b & sn)
-    
-    z = list(range(0x0, 0x10))   #Inputs
+    z = list(range(0x0, 0x10))   #Inputs (0x0-0xF)
     index = 0 
     while(len(z) > 1):
         prev = z.copy()
@@ -115,12 +112,30 @@ def mux(s, value = None):
         index += 1
 
     address = '$' + hex(z[0])[-1]
+
+    #If a value was passed, access the register at the given address,
+    #else, return the register's value
     if(value):
         global REGISTERS
         if(address != '$0'):
             REGISTERS[address] = value
     else:
-        return REGISTERS[address]     
+        return REGISTERS[address]
+
+def ALU(ins):
+    """Arithmetic Logical Unit
+    handles all of the instructions
+    """
+    
+    if(ins == 0b1111):
+        print('add')
+    elif(ins == 0b1110):
+        print('sub')
+    elif(ins == 0b1101):
+        print('and')
+    elif(ins == 0b1100):
+        print('nor')
+
         
 
 class MemoryOverflowException(Exception):
