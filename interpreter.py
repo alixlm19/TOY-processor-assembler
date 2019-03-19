@@ -100,7 +100,11 @@ def fetch_instruction():
     PC += 1
 
 def mux(s, value = None):
-    """16 to 1 multiplexer"""
+    """16 to 1 multiplexer
+
+    If no value has been specified, it returns the value stored at the given register,
+    else, it stores the value to the register.
+    """
     s = s[2:]
     s = [0b1111 * int(i) for i in s[::-1]]
     
@@ -122,19 +126,39 @@ def mux(s, value = None):
     else:
         return REGISTERS[address]
 
-def ALU(ins):
-    """Arithmetic Logical Unit
-    handles all of the instructions
+class Adder():
+    """Adds two binary numbers
     """
-    
-    if(ins == 0b1111):
-        print('add')
-    elif(ins == 0b1110):
-        print('sub')
-    elif(ins == 0b1101):
-        print('and')
-    elif(ins == 0b1100):
-        print('nor')
+
+    @staticmethod
+    def __half_adder__(a, b):
+        """Takes two input values a, b of type string and returns a tuple
+        containing the XOR of the inputs and its carry"""
+        return (a ^ b, a & b)   #(sum, carry)
+
+    def __full_adder__(self, a, b, c) -> tuple:
+        """Takes three inputs, two adding bits and one carry and performs a binary
+        addition."""
+        s1, c0 = self.__half_adder__(a, b)
+        sum_, c1 = self.__half_adder__(c, s1)
+        return (sum_, c0 | c1)
+
+    def add(self, a, b, c = 0):
+        result = ''
+        carry = c
+        length = len(a) - 1
+        for i in range(length, -1, -1):
+            sum_, carry = self.__full_adder__(int(a[i]), int(b[i]), int(carry))
+            result = str(sum_) + result
+        return result
+        
+        
+class ALU():
+    """Arithmetic Logical Unit handles all of the arithmetic instructions
+    """
+
+    def execute_instruction():
+        pass
 
         
 
@@ -146,3 +170,23 @@ class InvalidInstructionError(Exception):
 
 class InvalidArgumentError(Exception):
     pass
+
+
+
+"""
+Effective address: specific location of data in memoroy
+
+Memory Addressing Modes
+Load instruction: 1 reg, address
+    Data transger: reg <-- MEM[address]
+
+Modes of specifying a memory address:
+    -Immediate: address is a constant
+    -Pointer: address is contents of a register
+    -Base-displacement: [register] + constant
+        Uses: local variables, object fields, immediate4, pointer
+    -Base-index: [register1] + [register2]
+        Uses: array element access, pointer
+    -Base-index-disp: [register1] + [register2] + constant
+    -Inderect: [MEM[register]]
+"""
